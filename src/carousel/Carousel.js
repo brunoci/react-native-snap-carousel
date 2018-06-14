@@ -1284,7 +1284,7 @@ export default class Carousel extends Component {
     }
 
     render () {
-        const { data, renderItem } = this.props;
+        const { data, renderItem, invertCards } = this.props;
 
         if (!data || !renderItem) {
             return false;
@@ -1296,16 +1296,35 @@ export default class Carousel extends Component {
             ...this._getComponentStaticProps()
         };
 
-        return this._needsScrollView() ? (
+        if (this._needsScrollView()) {
+          let items = [];
+          if (invertCards === true) {
+              // Add cards in the reverse order and set the layout to row-reverse.
+              // This ensures that the first card is ABOVE the second one and so on. The alternative of
+              // using z-index and elevation is not working properly on Android. 
+            if (!props.contentContainerStyle) {
+                props.contentContainerStyle = [];
+            }
+            props.contentContainerStyle.push({flexDirection: 'row-reverse'});
+            const customData = this._getCustomData();
+            for (let index = customData.length - 1; index >= 0; index--) {
+              const item = customData[index];
+              items.push(this._renderItem({ item, index }));
+            }
+          } else {
+              // Original ordering of cards
+            items = this._getCustomData().map((item, index) => {
+                return this._renderItem({ item, index });
+            });
+          }
+
+          return (
             <AnimatedScrollView {...props}>
-                {
-                    this._getCustomData().map((item, index) => {
-                        return this._renderItem({ item, index });
-                    })
-                }
+                {items}
             </AnimatedScrollView>
-        ) : (
-            <AnimatedFlatList {...props} />
-        );
+          ); 
+         } else {
+           return (<AnimatedFlatList {...props} />);
+         }
     }
 }
